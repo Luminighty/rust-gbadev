@@ -1,23 +1,79 @@
-// Games made using `agb` are no_std which means you don't have access to the standard
-// rust library. This is because the game boy advance doesn't really have an operating
-// system, so most of the content of the standard library doesn't apply.
-//
-// Provided you haven't disabled it, agb does provide an allocator, so it is possible
-// to use both the `core` and the `alloc` built in crates.
 #![no_std]
-// `agb` defines its own `main` function, so you must declare your game's main function
-// using the #[agb::entry] proc macro. Failing to do so will cause failure in linking
-// which won't be a particularly clear error message.
 #![no_main]
-// This is required to allow writing tests
+
 #![cfg_attr(test, feature(custom_test_frameworks))]
 #![cfg_attr(test, reexport_test_harness_main = "test_main")]
 #![cfg_attr(test, test_runner(agb::test_runner::test_runner))]
 
-// The main function must take 1 arguments and never return. The agb::entry decorator
-// ensures that everything is in order. `agb` will call this after setting up the stack
-// and interrupt handlers correctly. It will also handle creating the `Gba` struct for you.
+use agb::{input::Button, println};
+use ball::Ball;
+use paddle::Paddle;
+
+pub mod gfx;
+mod ball;
+mod paddle;
+mod collision;
+
 #[agb::entry]
 fn main(mut gba: agb::Gba) -> ! {
-    agb::no_game(gba);
+	setup(gba);
+}
+
+const BALL_VELX: i32 = 1;
+const BALL_VELY: i32 = 1;
+const PADDLE_VELY: i32 = 2;
+
+fn setup(mut gba: agb::Gba) -> ! {
+	let oam = gba.display.object.get_managed();
+	let mut input = agb::input::ButtonController::new();
+	
+	const BALL_X: i32 = 10;
+	const BALL_Y: i32 = 10;
+
+	let mut ball = ball::Ball::new(&oam, BALL_X, BALL_Y, BALL_VELX, BALL_VELY);
+	let mut paddle = paddle::Paddle::new(&oam, 10, agb::display::HEIGHT / 2 - 8);
+	let mut sad = oam.object_sprite(gfx::SAD.sprite(0));
+	sad.set_x(agb::display::WIDTH as u16 / 2 - 8).set_y(agb::display::HEIGHT as u16 / 2 - 8);
+
+	loop {
+		ball.x = BALL_X;
+		ball.y = BALL_X;
+		ball.vx = BALL_VELX;
+		ball.vy = BALL_VELX;
+		loop {
+			let y_tri = input.y_tri() as i32;
+			
+			if ball.vx < 0 && collision::ball_intersects(&ball, &paddle) {
+				ball.vx *= -1;
+				ball.vx += 1;
+				ball.vy += ball.vy.signum();
+			}
+			
+			paddle.step(y_tri * PADDLE_VELY);
+			ball.step();
+			
+			paddle.draw();
+			ball.draw();
+	
+			agb::display::busy_wait_for_vblank();
+			oam.commit();
+			input.update();
+
+			if !ball.is_on_screen() {
+				sad.show();
+				break;
+			}
+		}
+	
+		loop {
+			agb::display::busy_wait_for_vblank();
+			oam.commit();
+			input.update();	
+
+			if input.is_pressed(Button::A) {
+				break;
+			}
+		}
+		sad.hide();
+	}
 }

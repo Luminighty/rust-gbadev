@@ -1,0 +1,30 @@
+{
+	// See https://go.microsoft.com/fwlink/?LinkId=733558
+	// for the documentation about the tasks.json format
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "run GBA",
+			"type": "shell",
+			"command": "D:\\Games\\GBA\\mGBA-0.10.3\\mGBA.exe",
+			"args": [
+				".\\target\\thumbv4t-none-eabi\\debug\\lumi-gbadev"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "build debug",
+			"type": "cargo",
+			"command": "build"
+		},
+		{
+			"label": "Build and Run",
+			"type": "shell",
+			"dependsOn": [
+				"build debug",
+				"run GBA"
+			],
+			"problemMatcher": []
+		}
+	]
+}
