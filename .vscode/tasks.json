@@ -8,7 +8,7 @@
 			"type": "shell",
 			"command": "D:\\Games\\GBA\\mGBA-0.10.3\\mGBA.exe",
 			"args": [
-				".\\target\\thumbv4t-none-eabi\\debug\\lumi-dig"
+				".\\target\\thumbv4t-none-eabi\\debug\\minimetroid"
 			],
 			"problemMatcher": []
 		},
